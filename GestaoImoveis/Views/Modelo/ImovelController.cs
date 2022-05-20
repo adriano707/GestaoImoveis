@@ -1,5 +1,6 @@
 ﻿using Data;
 using Dominio.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace GestaoImoveis.Views.Modelo
 {
+    [Authorize]
     public class ImovelController : Controller
     {
         private readonly GestaoImoveisContext _context;
@@ -46,7 +48,7 @@ namespace GestaoImoveis.Views.Modelo
         // GET: Imovel/Create
         public IActionResult Create()
         {
-            ViewData["ClienteId"] = new SelectList(_context.Clientes, "Id", "Cpf");
+            ViewData["ClienteId"] = new SelectList(_context.Clientes.Where(c => c.IsAtivo), "Id", "Nome");
             return View();
         }
 
@@ -145,6 +147,9 @@ namespace GestaoImoveis.Views.Modelo
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var imovel = await _context.Imoveis.FindAsync(id);
+
+            if(imovel.Cliente is not null) return BadRequest("O Imóvel possui um cliente associado!");
+
             _context.Imoveis.Remove(imovel);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));

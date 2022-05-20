@@ -1,5 +1,6 @@
 ﻿using Data;
 using Dominio.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace GestaoImoveis.Controllers
 {
+    [Authorize]
     public class ClienteController : Controller
     {
         private readonly GestaoImoveisContext _context;
@@ -19,8 +21,8 @@ namespace GestaoImoveis.Controllers
         // GET: Cliente
         public async Task<IActionResult> Index()
         {
-            var clientes = _context.Clientes.Where(c => c.IsAtivo).ToListAsync();
-            return View(clientes);          
+            var clientes = await _context.Clientes.ToListAsync();
+            return View(clientes);
         }
 
         // GET: Cliente/Details/5
@@ -52,11 +54,12 @@ namespace GestaoImoveis.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nome,Email,Cpf,Ativo")] Cliente cliente)
+        public async Task<IActionResult> Create([Bind("Id,Nome,Email,Cpf,IsAtivo")] Cliente cliente)
         {
-            Cliente existeCleinte = _context.Clientes.FirstOrDefault(c => c.Email == cliente.Email || c.Cpf == cliente.Cpf);
-
-            if (existeCleinte is not null) return NotFound("Cliente já cadastrado");
+            if (_context.Clientes.AsNoTracking().Any(c => c.Email == cliente.Email || c.Cpf == cliente.Cpf))
+            {
+                return BadRequest("Cliente já cadastrado");
+            }
 
             if (ModelState.IsValid)
             {
@@ -88,7 +91,7 @@ namespace GestaoImoveis.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nome,Email,Cpf,Ativo")] Cliente cliente)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Nome,Email,Cpf,IsAtivo")] Cliente cliente)
         {
             if (id != cliente.Id)
             {
